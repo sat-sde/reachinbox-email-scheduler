@@ -85,6 +85,8 @@ ReachInbox Email Scheduler is an asynchronous, event-driven email dispatching pl
 
 ```
 reachinbox-email-scheduler/
+├── render.yaml                     # Render Blueprint (1-Click Deployment on Render)
+├── RENDER_DEPLOYMENT.md            # Step-by-step Render deployment guide
 ├── docker-compose.yml              # PostgreSQL 16, Redis 7, Elasticsearch 8.16.1
 ├── package.json                    # Monorepo workspaces definition & scripts
 ├── README.md                       # Comprehensive project documentation

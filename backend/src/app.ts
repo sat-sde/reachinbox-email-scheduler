@@ -5,6 +5,8 @@ import morgan from 'morgan'
 import session from 'express-session'
 import cookieParser from 'cookie-parser'
 import passport from 'passport'
+import path from 'path'
+import fs from 'fs'
 import { createBullBoard } from '@bull-board/api'
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter'
 import { ExpressAdapter } from '@bull-board/express'
@@ -87,6 +89,30 @@ export function createApp(): Application {
   // ── Slack OAuth & Integration Routes ───────────────────────────
   app.use('/api/slack', slackRouter)
   app.use('/api/auth/slack', slackRouter)
+
+  // ── Serve Frontend Production Build (Single-Service Hosting) ───
+  const candidatePaths = [
+    path.resolve(__dirname, '../../../frontend/dist'),
+    path.resolve(__dirname, '../../frontend/dist'),
+    path.resolve(__dirname, '../frontend/dist'),
+    path.resolve(process.cwd(), 'frontend/dist'),
+    path.resolve(process.cwd(), '../frontend/dist'),
+  ]
+  const distPath = candidatePaths.find((p) => fs.existsSync(p))
+
+  if (distPath) {
+    app.use(express.static(distPath))
+    app.get('*', (req, res, next) => {
+      if (
+        req.path.startsWith('/api') ||
+        req.path.startsWith('/auth') ||
+        req.path.startsWith('/admin')
+      ) {
+        return next()
+      }
+      res.sendFile(path.join(distPath, 'index.html'))
+    })
+  }
 
   // ── 404 & Centralized Error Handlers ───────────────────────────
   app.use(notFoundHandler)

@@ -13,6 +13,8 @@
     "dev:worker": "npm run dev:worker --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
+    "render-build": "npm run prisma:generate --workspace=backend && npm run build",
+    "render-start": "npm run prisma:migrate --workspace=backend && EMBED_WORKER=true npm run start",
     "start": "npm run start --workspace=backend",
     "worker": "npm run worker --workspace=backend",
     "test:ui": "npm run test:ui --workspace=backend",

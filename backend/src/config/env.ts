@@ -11,12 +11,14 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
   // Redis (BullMQ persistent queue storage & distributed rate limiting)
+  REDIS_URL: z.string().optional().default(''), // Render or cloud Redis URL (e.g. redis://red-xxx:6379)
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6379),
   REDIS_PASSWORD: z.string().optional().default(''),
 
   // BullMQ Worker & Rate Limiting Concurrency
   WORKER_CONCURRENCY: z.coerce.number().min(1).max(50).default(5),
+  EMBED_WORKER: z.coerce.boolean().default(false), // Run worker inside the API server process (convenient for single-service hosting)
   MIN_DELAY_BETWEEN_EMAILS_MS: z.coerce.number().min(0).default(2000), // Min delay between sends per sender
   MAX_EMAILS_PER_HOUR_PER_SENDER: z.coerce.number().min(1).default(50), // Max emails per hour per sender
 

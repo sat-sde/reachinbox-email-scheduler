@@ -1,0 +1,64 @@
+# ───────────────────────────────────────────────────────────────────────────────
+# Render Blueprint Specification — ReachInbox Email Scheduler
+# Infrastructure-as-Code for 1-Click Deployment on Render (https://render.com)
+# ───────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── 1. Full-Stack Web Service (Serves Backend REST API + React UI) ───────────
+  - type: web
+    name: reachinbox-scheduler
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm run render-build
+    startCommand: npm run render-start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: EMBED_WORKER
+        value: "true"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: reachinbox-db
+          property: connectionString
+      - key: REDIS_URL
+        fromRedis:
+          name: reachinbox-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: WORKER_CONCURRENCY
+        value: "5"
+      - key: MIN_DELAY_BETWEEN_EMAILS_MS
+        value: "2000"
+      - key: MAX_EMAILS_PER_HOUR_PER_SENDER
+        value: "50"
+      - key: SMTP_HOST
+        value: smtp.ethereal.email
+      - key: SMTP_PORT
+        value: "587"
+      - key: BULL_BOARD_USER
+        value: admin
+      - key: BULL_BOARD_PASS
+        value: admin123
+
+databases:
+  # ── 2. Managed PostgreSQL Database ───────────────────────────────────────────
+  - name: reachinbox-db
+    databaseName: reachinbox
+    user: postgres
+    plan: free
+    region: oregon
+
+redis:
+  # ── 3. Managed Redis Instance (Persistent Storage for BullMQ Queue) ───────────
+  - name: reachinbox-redis
+    plan: free
+    region: oregon
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
