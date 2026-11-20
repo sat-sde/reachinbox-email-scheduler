@@ -1,13 +1,14 @@
 {
   "name": "reachinbox-frontend",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "description": "ReachInbox Email Scheduler — Frontend",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.3",

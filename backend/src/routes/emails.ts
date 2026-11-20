@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import { prisma } from '../config/prisma'
 import { addDelayedEmailJob, emailQueue } from '../jobs/emailQueue'
-import { esClient, EMAIL_INDEX } from '../config/elasticsearch'
+import { indexEmailDocument, searchEmailDocuments } from '../services/elasticsearchService'
 import { logger } from '../utils/logger'
 import { BadRequestError, NotFoundError } from '../utils/errors'
 
@@ -22,7 +22,7 @@ const scheduleBatchSchema = z.object({
         .filter((s) => s.length > 0)
     ),
   ]),
-  senderId: z.string().uuid('Invalid Sender ID format').optional(),
+  senderId: z.string().uuid('Invalid Sender ID format').or(z.literal('')).optional().transform((v) => (v === '' ? undefined : v)),
   startTime: z.string().optional(), // ISO date/time string when the campaign should begin
   delayBetweenEmails: z.coerce.number().min(0).default(0), // In seconds between successive emails
   hourlyLimit: z.coerce.number().min(1).max(10000).optional(), // Maximum emails per hour
@@ -33,7 +33,7 @@ const createSingleEmailSchema = z.object({
   subject: z.string().min(1).max(255),
   body: z.string().min(1),
   scheduledAt: z.string().datetime().optional(),
-  senderId: z.string().uuid().optional(),
+  senderId: z.string().uuid().or(z.literal('')).optional().transform((v) => (v === '' ? undefined : v)),
   idempotencyKey: z.string().optional(),
 })
 
@@ -162,8 +162,9 @@ router.post('/schedule', async (req: Request, res: Response, next: NextFunction)
       })
 
       // 4. Non-blocking index into Elasticsearch (if active)
-      esClient
-        .index({ index: EMAIL_INDEX, id: email.id, document: { ...email } })
+      // Fetch sender for indexing context, then call proper indexEmailDocument
+      prisma.sender.findUnique({ where: { id: senderId || '' } })
+        .then((sender) => indexEmailDocument({ ...email, sender: sender ? { email: sender.email, name: sender.name } : null }))
         .catch((err) => logger.warn('Elasticsearch indexing failed (non-critical):', err.message))
     }
 
@@ -240,15 +241,19 @@ router.post('/', async (req: Request, res: Response, next: NextFunction): Promis
   }
 })
 
-// ── GET /api/emails (List all emails - paginated) ──────────────────
+// ── GET /api/emails (List all emails - paginated, scoped to authenticated user) ──────────────────
 router.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const page = Number(req.query.page ?? 1)
     const limit = Number(req.query.limit ?? 20)
     const skip = (page - 1) * limit
     const status = req.query.status as any
+    const user = req.user as any
+    const userId = user?.id
 
-    const where = status ? { status } : {}
+    // Scope by authenticated user; if no user (fallback), show all
+    const where: any = userId ? { userId } : {}
+    if (status) where.status = status
 
     const [emails, total] = await Promise.all([
       prisma.email.findMany({
@@ -278,18 +283,18 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
   }
 })
 
-// ── GET /api/emails/search (Elasticsearch full-text search) ────────
+// ── GET /api/emails/search (Elasticsearch full-text search with DB fallback) ────────
 router.get('/search', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const q = String(req.query.q ?? '')
-    const result = await esClient.search({
-      index: EMAIL_INDEX,
-      query: {
-        multi_match: { query: q, fields: ['recipient', 'subject', 'body'] },
-      },
-    })
-    const hits = result.hits.hits.map((h) => h._source)
-    res.json({ success: true, data: hits, total: result.hits.total })
+    const q = String(req.query.q ?? '').trim()
+    const status = req.query.status as 'scheduled' | 'processing' | 'sent' | 'failed' | 'all' | undefined
+    const page = Number(req.query.page ?? 1)
+    const limit = Number(req.query.limit ?? 20)
+    const user = req.user as any
+    const userId = user?.id
+
+    const result = await searchEmailDocuments({ query: q, status, page, limit, userId })
+    res.json({ success: true, ...result })
   } catch (error) {
     next(error)
   }

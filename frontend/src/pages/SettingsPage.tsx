@@ -12,7 +12,6 @@ import {
   Shield,
   User,
   Sliders,
-  Bell,
   Cpu,
 } from 'lucide-react'
 import toast from 'react-hot-toast'

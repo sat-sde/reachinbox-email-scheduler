@@ -4,6 +4,7 @@ import { EMAIL_QUEUE_NAME, EmailJobData } from './emailQueue'
 import { sendEmailWithSender } from '../services/emailService'
 import { reserveSenderSlot, releaseSenderSlot } from '../services/rateLimiterService'
 import { sendSlackRateLimitNotification } from '../services/slackService'
+import { updateEmailDocumentStatus } from '../services/elasticsearchService'
 import { prisma } from '../config/prisma'
 import { logger } from '../utils/logger'
 import { env } from '../config/env'
@@ -145,6 +146,13 @@ export function createEmailWorker(customConcurrency?: number): Worker<EmailJobDa
         if (result.previewUrl) {
           logger.info(`[Worker] 🔗 Ethereal Preview URL: ${result.previewUrl}`)
         }
+
+        // Update Elasticsearch document status (non-blocking, non-critical)
+        updateEmailDocumentStatus(emailId, {
+          status: 'sent',
+          sentAt: new Date(),
+          previewUrl: result.previewUrl || null,
+        }).catch((err) => logger.warn('[Worker] ES status update failed (non-critical):', err))
       } catch (sendError: any) {
         // Release the reserved slot in Redis so network/SMTP errors don't exhaust quota
         await releaseSenderSlot(effectiveSenderId, emailId)

@@ -11,8 +11,6 @@ import {
   Eye,
   Trash2,
   AlertCircle,
-  Inbox,
-  Filter,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'

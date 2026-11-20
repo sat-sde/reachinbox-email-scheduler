@@ -99,6 +99,8 @@ export async function initElasticsearchIndex(): Promise<boolean> {
         },
       })
       logger.info(`[Elasticsearch] Index "${EMAIL_INDEX}" created successfully.`)
+      // Synchronize existing PostgreSQL emails into Elasticsearch
+      syncAllDatabaseEmailsToElasticsearch().catch(() => {})
     } else {
       logger.info(`[Elasticsearch] Index "${EMAIL_INDEX}" already exists.`)
     }
@@ -378,5 +380,29 @@ export async function reconcileFailedIndexing(): Promise<{
   } catch (error: any) {
     logger.error('[Elasticsearch Reconciliation] Error during reconciliation:', error.message)
     return { reconciledCount: 0, failedCount: 0, totalPending: 0 }
+  }
+}
+
+/**
+ * Synchronizes recent emails from PostgreSQL to Elasticsearch.
+ */
+export async function syncAllDatabaseEmailsToElasticsearch(): Promise<number> {
+  try {
+    const emails = await prisma.email.findMany({
+      include: { sender: true },
+      take: 200,
+      orderBy: { createdAt: 'desc' },
+    })
+    logger.info(`[Elasticsearch] Syncing ${emails.length} emails from DB to ES...`)
+    let count = 0
+    for (const email of emails) {
+      const ok = await indexEmailDocument(email)
+      if (ok) count++
+    }
+    logger.info(`[Elasticsearch] Successfully indexed ${count}/${emails.length} emails into ES`)
+    return count
+  } catch (err: any) {
+    logger.warn('[Elasticsearch] Batch sync failed:', err.message)
+    return 0
   }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Calendar, Plus, Mail, Shield, CheckCircle, RefreshCw, Clock } from 'lucide-react'
+import { Calendar, Plus, Shield, CheckCircle } from 'lucide-react'
 import api from '../services/api'
 import { Sender } from '../types'
 import { useModal } from '../context/ModalContext'

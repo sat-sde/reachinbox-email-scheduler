@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, RefreshCw, Plus, ExternalLink, Eye, Mail, Clock, CheckCircle2 } from 'lucide-react'
+import { Search, RefreshCw, Plus, ExternalLink, Eye } from 'lucide-react'
 import api from '../services/api'
 import { Email } from '../types'
 import { useModal } from '../context/ModalContext'

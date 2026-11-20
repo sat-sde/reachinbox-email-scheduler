@@ -32,12 +32,6 @@ export interface ComposeModalProps {
   onSuccess: () => void
 }
 
-interface ParsedRecipient {
-  email: string
-  valid: boolean
-  row?: number
-}
-
 interface CsvParseState {
   fileName: string
   totalRows: number
@@ -139,11 +133,6 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({ isOpen, onClose, onS
       .filter(r => r.length > 0 && validateEmail(r))
   })()
 
-  const manualRecipientCount = manualInput
-    .split(/[\n,;]+/)
-    .map(r => r.trim())
-    .filter(r => r.length > 0).length
-
   const manualInvalidCount = manualInput
     .split(/[\n,;]+/)
     .map(r => r.trim())
@@ -197,7 +186,7 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({ isOpen, onClose, onS
     const invalid: string[] = []
     let duplicatesRemoved = 0
 
-    rows.forEach((row, rowIdx) => {
+    rows.forEach((row, _rowIdx) => {
       let candidates: string[] = []
 
       if (emailCol) {
@@ -252,6 +241,8 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({ isOpen, onClose, onS
   // ── Template fill ───────────────────────────────────────────────────────────
   const handleUseTemplate = () => {
     setSubject('Quick question regarding your outbound pipeline')
+    setManualInput('browser.test.recipient@reachinbox.test, team@startup.io')
+    setRecipientTab('manual')
     setBody(
       `<p>Hi there,</p>
 <p>I noticed your team is actively scaling outbound outreach. We built ReachInbox to automate reliable email scheduling with distributed rate limiting and zero job loss.</p>

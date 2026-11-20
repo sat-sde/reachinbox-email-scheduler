@@ -237,11 +237,17 @@ async function runBrowserVerification() {
 
     // Submit the form by clicking 'Send Now' or 'Schedule Campaign'
     console.log('Submitting email via real API from browser...')
-    await cdp.eval(`
-      const btns = Array.from(document.querySelectorAll('button'));
-      const submitBtn = btns.find(b => b.innerText.includes('Send Now') || b.innerText.includes('Schedule Campaign'));
-      if (submitBtn) submitBtn.click();
+    const submitResult = await cdp.eval(`
+      (() => {
+        const btns = Array.from(document.querySelectorAll('button'));
+        const submitBtn = btns.find(b => b.innerText.includes('Send Now') || b.innerText.includes('Schedule Campaign'));
+        if (!submitBtn) return 'BUTTON_NOT_FOUND';
+        if (submitBtn.disabled) return 'BUTTON_DISABLED: ' + submitBtn.innerText;
+        submitBtn.click();
+        return 'CLICKED: ' + submitBtn.innerText;
+      })()
     `)
+    console.log('  - Submit button:', submitResult)
     await sleep(4000)
 
     // Verify email was added to the table
