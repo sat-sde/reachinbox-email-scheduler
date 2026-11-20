@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+logs/
+prisma/migrations/
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+.idea/
+*.swp
+coverage/
+tmp/
+temp/
+

@@ -1,0 +1,23 @@
+{
+  "name": "reachinbox-email-scheduler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack Email Job Scheduler — ReachInbox Intern Assignment",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -p \"[{name}]\" -n \"API,WORKER,VITE\" -c \"cyan,magenta,green\" \"npm run dev:api --workspace=backend\" \"npm run dev:worker --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "dev:api": "npm run dev:api --workspace=backend",
+    "dev:worker": "npm run dev:worker --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
+    "start": "npm run start --workspace=backend",
+    "worker": "npm run worker --workspace=backend",
+    "lint": "npm run lint --workspace=frontend && npm run lint --workspace=backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

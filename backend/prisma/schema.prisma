@@ -1,0 +1,100 @@
+// Prisma Schema for ReachInbox Email Scheduler
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EmailStatus {
+  scheduled
+  processing
+  sent
+  failed
+}
+
+model User {
+  id               String            @id @default(uuid())
+  name             String
+  email            String            @unique
+  avatar           String?
+  googleId         String?           @unique
+  createdAt        DateTime          @default(now())
+
+  // Relations
+  senders          Sender[]
+  emails           Email[]
+  slackConnections SlackConnection[]
+
+  @@map("users")
+}
+
+model Sender {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email        String
+  name         String
+  host         String   @default("smtp.ethereal.email")
+  port         Int      @default(587)
+  etherealUser String   // Securely stored / encrypted Ethereal username
+  etherealPass String   // Securely stored / encrypted Ethereal password
+  hourlyLimit  Int      @default(50)
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  // Relations
+  emails       Email[]
+
+  @@index([userId])
+  @@map("senders")
+}
+
+model Email {
+  id             String      @id @default(uuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  senderId       String?
+  sender         Sender?     @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  recipient      String
+  subject        String
+  body           String      @db.Text
+  scheduledAt    DateTime
+  sentAt         DateTime?
+  status         EmailStatus @default(scheduled)
+  errorMessage   String?     @db.Text
+  previewUrl     String?     // Ethereal email preview URL
+  messageId      String?     // SMTP Response Message-ID
+  bullJobId      String?
+  idempotencyKey String?     @unique
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([userId])
+  @@index([senderId])
+  @@map("emails")
+}
+
+model SlackConnection {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken String   // Securely stored / encrypted access token
+  teamId      String
+  teamName    String?
+  channelId   String?
+  channelName String?
+  slackUserId String?
+  botUserId   String?
+  connected   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@index([userId])
+  @@map("slack_connections")
+}
