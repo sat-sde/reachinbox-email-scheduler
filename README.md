@@ -74,7 +74,7 @@ reachinbox-email-scheduler/
 ### 1. Clone & Install
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/sat-sde/reachinbox-email-scheduler.git
 cd reachinbox-email-scheduler
 
 # Install all workspace dependencies (frontend + backend + root)
@@ -258,6 +258,38 @@ npm run dev --workspace=frontend         # React/Vite (http://localhost:5173)
 
 ---
 
+## 🎨 Frontend Dashboard Architecture (Figma Aligned)
+
+The ReachInbox user interface is built with **React 18**, **Vite 6**, and **Tailwind CSS**, strictly reproducing the [Figma Design Reference](https://www.figma.com/design/kOTwGlESjijCYnMgtHfvfU/Outbox-Labs-Assignment?node-id=59-4050&p=f&m=dev):
+
+### 1. Key Pages & Sections
+- **Login (`/login`)**: Google OAuth 2.0 CTA, brand header, development demo bypass option.
+- **Dashboard (`/dashboard`)**:
+  - **4 Top Metric Cards**: Scheduled Queue, Sent Emails, Active Senders, Total Managed.
+  - **Status Tabs & Filter**: `All`, `Scheduled`, `Sent`, `Failed` with live counts and search input.
+  - **Scheduled Emails Table**: Recipient, subject snippet, scheduled time, status badge, details modal, cancel action.
+  - **Sent Emails Table**: Recipient, subject, delivery timestamp, status badge, direct Ethereal preview link.
+  - **Slack Notifications Card**: Workspace connection status, channel alert target, connect/disconnect controls.
+- **Campaigns & Senders (`/senders`)**: Add new sender identities, configure hourly quotas, view status.
+- **Settings & Infrastructure (`/settings`)**: Live health heartbeats for PostgreSQL, Redis, Elasticsearch, process uptime, and Bull Board links.
+
+---
+
+## 📁 CSV / TXT Recipient Parsing (PapaParse)
+
+The **Compose New Email Modal** features dual recipient ingestion modes:
+
+1. **Manual Entry**: Multi-line or comma/semicolon-separated list with real-time email syntax validation badges.
+2. **CSV / TXT File Upload**:
+   - Integrated client-side parsing using **PapaParse** with file-size and mime-type guards (max 5 MB).
+   - **Intelligent Column Detection**: Automatically detects headers (`email`, `Email`, `e-mail`, `emailaddress`) or scans all cell values for email patterns.
+   - **Syntax Validation**: Filters out malformed email strings using RFC-compliant regex.
+   - **Duplicate De-duplication**: Automatically removes duplicate entries across rows.
+   - **Audit Metrics**: Displays total valid emails, invalid/skipped count, and duplicates eliminated.
+   - **Collapsible Recipient Review**: Users can visually review the entire parsed recipient list before dispatching.
+
+---
+
 ## ⏱ Production Rate Limiting & Concurrency Architecture
 
 The ReachInbox email scheduler implements a distributed, atomic, sliding-window rate limiting engine designed for multi-worker and multi-instance environments.
@@ -337,6 +369,25 @@ npm run test:ratelimit
 3. Validates that the first **3 emails** are successfully dispatched through Ethereal SMTP in the current window with valid message IDs and preview URLs.
 4. Validates that the **remaining 2 emails** are delayed into the next window, their `scheduledAt` timestamps are shifted forward, and their jobs reside in BullMQ's Redis delayed set.
 5. Confirms **0 emails failed** and **0 jobs lost** (100% data fidelity).
+
+---
+
+### 5. Automated Browser UI Verification Suite (CDP)
+
+Run the full end-to-end headless Chrome verification suite via the Chrome DevTools Protocol (CDP):
+
+```bash
+# From the root directory or backend
+npm run test:ui
+```
+
+**What the test verifies:**
+1. **Login Page (`/login`)**: Validates Google OAuth 2.0 CTA, ReachInbox branding, and demo login.
+2. **Dashboard Overview (`/dashboard`)**: Validates user profile, sidebar navigation, Bull Board queue link, and the 4 top metric overview cards.
+3. **Compose & Schedule Modal**: Verifies CSV/TXT upload drop zone, manual entry, demo template prefill, and schedules an email via real `POST /api/emails/schedule`.
+4. **Table & Details Modal**: Validates table refresh, row selection, metadata inspection, and Ethereal preview URLs.
+5. **Settings & Health Telemetry (`/settings`)**: Confirms real-time live connection status for PostgreSQL 16, Redis 7, Elasticsearch 8, and process uptime.
+6. Automatically captures high-resolution screenshots for all verified screens.
 
 ---
 

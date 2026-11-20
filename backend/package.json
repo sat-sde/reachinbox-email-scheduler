@@ -20,7 +20,8 @@
     "test:scheduler": "ts-node src/scripts/testEmailScheduler.ts",
     "test:ethereal": "ts-node src/scripts/testEtherealSMTP.ts",
     "test:auth": "ts-node src/scripts/testAuthFlow.ts",
-    "test:slack": "ts-node src/scripts/testSlackIntegration.ts"
+    "test:slack": "ts-node src/scripts/testSlackIntegration.ts",
+    "test:ui": "ts-node src/scripts/verifyBrowserUI.ts"
   },
   "dependencies": {
     "@bull-board/api": "^6.9.0",

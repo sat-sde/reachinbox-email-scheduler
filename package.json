@@ -15,6 +15,8 @@
     "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
     "start": "npm run start --workspace=backend",
     "worker": "npm run worker --workspace=backend",
+    "test:ui": "npm run test:ui --workspace=backend",
+    "test:ratelimit": "npm run test:ratelimit --workspace=backend",
     "lint": "npm run lint --workspace=frontend && npm run lint --workspace=backend"
   },
   "devDependencies": {
