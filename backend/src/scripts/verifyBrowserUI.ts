@@ -201,8 +201,29 @@ async function runBrowserVerification() {
     await sleep(1000)
 
     const modalText = await cdp.eval('document.body.innerText')
-    const isModalOpen = modalText.includes('Compose & Schedule Email Campaign')
+    const isModalOpen =
+      modalText.includes('Compose & Schedule Campaign') ||
+      modalText.includes('Compose & Schedule Email Campaign')
     console.log(`  - Compose Modal Open: ${isModalOpen ? '✅' : '❌'}`)
+
+    // Click 'Upload CSV / TXT' tab to verify CSV upload UI
+    await cdp.eval(`
+      const tabs = Array.from(document.querySelectorAll('button'));
+      const csvTab = tabs.find(b => b.innerText.includes('Upload CSV'));
+      if (csvTab) csvTab.click();
+    `)
+    await sleep(800)
+
+    const csvTabScreenshotPath = path.join(ARTIFACT_DIR, 'screenshot-compose-csv-tab.png')
+    await cdp.captureScreenshot(csvTabScreenshotPath)
+
+    // Switch back to 'Manual Entry' tab
+    await cdp.eval(`
+      const tabs = Array.from(document.querySelectorAll('button'));
+      const manualTab = tabs.find(b => b.innerText.includes('Manual Entry'));
+      if (manualTab) manualTab.click();
+    `)
+    await sleep(500)
 
     // Click 'Use Demo Template' (populates recipient, subject, and rich HTML body)
     await cdp.eval(`
@@ -260,6 +281,28 @@ async function runBrowserVerification() {
     // Final clean dashboard view screenshot
     const finalDashboardScreenshotPath = path.join(ARTIFACT_DIR, 'screenshot-dashboard-final.png')
     await cdp.captureScreenshot(finalDashboardScreenshotPath)
+
+    // ── STEP 6: Verify Settings & Infrastructure Page ─────────────
+    console.log('\n--- Step 6: Verify Settings & Infrastructure Page ---')
+    await cdp.send('Page.navigate', { url: 'http://localhost:5173/settings' })
+    await sleep(2000)
+
+    const settingsText = await cdp.eval('document.body.innerText')
+    const hasSettingsTitle = settingsText.includes('Settings & Infrastructure')
+    const hasPostgres = settingsText.includes('PostgreSQL 16')
+    const hasRedis = settingsText.includes('Redis 7')
+    const hasElasticsearch = settingsText.includes('Elasticsearch 8')
+    const hasSettingsBullBoardLink = settingsText.includes('Bull Board Queue Dashboard')
+
+    console.log(`Settings Page Checks:`)
+    console.log(`  - Title visible: ${hasSettingsTitle ? '✅' : '❌'}`)
+    console.log(`  - PostgreSQL card: ${hasPostgres ? '✅' : '❌'}`)
+    console.log(`  - Redis card: ${hasRedis ? '✅' : '❌'}`)
+    console.log(`  - Elasticsearch card: ${hasElasticsearch ? '✅' : '❌'}`)
+    console.log(`  - Bull Board monitor link: ${hasSettingsBullBoardLink ? '✅' : '❌'}`)
+
+    const settingsScreenshotPath = path.join(ARTIFACT_DIR, 'screenshot-settings-page.png')
+    await cdp.captureScreenshot(settingsScreenshotPath)
 
     console.log('\n========================================')
     console.log('🎉 Browser UI Verification Completed Successfully!')
